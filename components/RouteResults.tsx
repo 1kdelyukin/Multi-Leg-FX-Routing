@@ -151,12 +151,17 @@ export function RouteResults({ response, error, isLoading }: RouteResultsProps) 
 
           <Separator className="bg-slate-800/60" />
 
-          {response.routes.map((route) => (
-            <RouteCard
+          {response.routes.map((route, index) => (
+            <div
               key={`${route.rank}-${route.path.join("-")}`}
-              route={route}
-              directAmount={response.directAmount}
-            />
+              className="route-card-enter"
+              style={{ animationDelay: `${index * 110}ms` }}
+            >
+              <RouteCard
+                route={route}
+                directAmount={response.directAmount}
+              />
+            </div>
           ))}
         </>
       )}

@@ -33,16 +33,51 @@ export function RouteForm({ defaultFrom, defaultTo, defaultAmount, defaultRouteM
   const router = useRouter();
   const [source, setSource] = useState(defaultFrom ?? "GBP");
   const [target, setTarget] = useState(defaultTo ?? "JPY");
-  const [amount, setAmount] = useState(normalizeAmountInput(defaultAmount ?? "1000"));
+  const [amount, setAmount] = useState(normalizeAmountInput(defaultAmount ?? ""));
   const [routeMode, setRouteMode] = useState<RouteMode>(defaultRouteMode ?? "all");
   const [response, setResponse] = useState<RoutingResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const submitted = useRef(false);
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const hasContentRef = useRef(false);
+
+  // Track whether we have content to animate out
+  useEffect(() => {
+    hasContentRef.current = response !== null || error !== null || isLoading;
+  });
+
+  function animateOut(): Promise<void> {
+    return new Promise((resolve) => {
+      const el = resultsRef.current;
+      if (!el || !hasContentRef.current) { resolve(); return; }
+      el.classList.remove("results-enter");
+      el.classList.add("results-exit");
+      setTimeout(() => {
+        el.classList.remove("results-exit");
+        el.style.opacity = "0";
+        resolve();
+      }, 320);
+    });
+  }
+
+  function animateIn() {
+    requestAnimationFrame(() => {
+      const el = resultsRef.current;
+      if (!el) return;
+      el.style.opacity = "";
+      el.classList.remove("results-exit");
+      el.classList.add("results-enter");
+      setTimeout(() => el.classList.remove("results-enter"), 500);
+    });
+  }
 
   async function submitRoutes(src = source, tgt = target, amt = amount, mode = routeMode) {
+    await animateOut();
     setIsLoading(true);
     setError(null);
+    setResponse(null);
+    animateIn();
     try {
       const result = await fetch("/api/routes", {
         method: "POST",
@@ -51,12 +86,16 @@ export function RouteForm({ defaultFrom, defaultTo, defaultAmount, defaultRouteM
       });
       const payload = await result.json();
       if (!result.ok) throw new Error(payload.error ?? "Unable to calculate routes.");
+      await animateOut();
       setResponse(payload as RoutingResponse);
+      setIsLoading(false);
+      animateIn();
     } catch (caughtError) {
+      await animateOut();
       setResponse(null);
       setError(caughtError instanceof Error ? caughtError.message : "Unable to calculate routes.");
-    } finally {
       setIsLoading(false);
+      animateIn();
     }
   }
 
@@ -134,6 +173,7 @@ export function RouteForm({ defaultFrom, defaultTo, defaultAmount, defaultRouteM
                   onChange={(e) => setAmount(normalizeAmountInput(e.target.value))}
                   inputMode="decimal"
                   type="text"
+                  placeholder="0"
                   className="h-10 font-semibold text-sm pr-16 bg-[#0b0e11] border-[#2b3139]"
                 />
                 <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-[10px] font-bold text-slate-500 tracking-wider">
@@ -207,7 +247,7 @@ export function RouteForm({ defaultFrom, defaultTo, defaultAmount, defaultRouteM
               ) : (
                 <Search className="h-4 w-4" />
               )}
-              {isLoading ? "Routing..." : "Find Optimal Routes"}
+              {isLoading ? "Routing..." : "Search"}
             </Button>
 
             <p className="text-[8px] text-slate-600 text-center leading-4 tracking-wide">
@@ -217,7 +257,11 @@ export function RouteForm({ defaultFrom, defaultTo, defaultAmount, defaultRouteM
         </Card>
       </form>}
 
-      {!navigateOnSubmit && <RouteResults response={response} error={error} isLoading={isLoading} />}
+      {!navigateOnSubmit && (
+        <div ref={resultsRef}>
+          <RouteResults response={response} error={error} isLoading={isLoading} />
+        </div>
+      )}
     </div>
   );
 }

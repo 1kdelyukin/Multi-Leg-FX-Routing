@@ -156,7 +156,7 @@ export function RouteCard({ route, directAmount }: RouteCardProps) {
           </div>
         </div>
 
-        <details className="group mt-4" open={route.rank === 1}>
+        <details className="group mt-4">
           <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg border border-[#1e2329] bg-[#0f1319] px-3 py-2 transition hover:border-[#2b3139]">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-[#848e9c]">Execution Detail</span>

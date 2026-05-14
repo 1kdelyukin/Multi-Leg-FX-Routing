@@ -207,12 +207,12 @@ function RoutesContent() {
   const [from, setFrom] = useState(searchParams.get("from") ?? "GBP");
   const [to, setTo] = useState(searchParams.get("to") ?? "JPY");
   const [amount, setAmount] = useState(
-    normalizeAmountInput(searchParams.get("amount") ?? "1000"),
+    normalizeAmountInput(searchParams.get("amount") ?? ""),
   );
   const [routeMode, setRouteMode] = useState<RouteMode>(
     searchParams.get("mode") === "fiat_only" ? "fiat_only" : "all",
   );
-  const hasParams = !!(searchParams.get("from") && searchParams.get("to") && amount);
+  const hasParams = !!(searchParams.get("from") && searchParams.get("to") && searchParams.get("amount"));
 
   function navigate() {
     const params = new URLSearchParams({
@@ -252,7 +252,7 @@ function RoutesContent() {
           </div>
 
           <RouteForm
-            key={`${searchParams.get("from") ?? from}-${searchParams.get("to") ?? to}-${searchParams.get("amount") ?? amount}-${searchParams.get("mode") ?? routeMode}`}
+            key={`${searchParams.get("from")}-${searchParams.get("to")}-${searchParams.get("amount")}-${searchParams.get("mode")}`}
             defaultFrom={from}
             defaultTo={to}
             defaultAmount={amount}
@@ -268,12 +268,12 @@ function RoutesContent() {
           <div className="flex items-center gap-2">
             <CircleDot className="h-3 w-3 text-[#848e9c]" />
             <span className="text-xs text-[#848e9c]">
-              Rates: Frankfurter Â· ExchangeRate-API Â· Fawazahmed0
+              Designed and built by Kirill Delyukin
             </span>
           </div>
           <div className="flex items-center gap-2">
             <Image src="/SDM-Logo.svg" alt="SDM" width={14} height={15} />
-            <span className="text-xs text-[#848e9c]">SDM Â© 2026</span>
+            <span className="text-xs text-[#848e9c]">SDM © 2026</span>
           </div>
         </div>
       </footer>
