@@ -160,6 +160,7 @@ export function RouteResults({ response, error, isLoading }: RouteResultsProps) 
               <RouteCard
                 route={route}
                 directAmount={response.directAmount}
+                autoOpen={index === 0}
               />
             </div>
           ))}

@@ -1,6 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import { ArrowRight, ChevronDown, Medal, Star, Trophy } from "lucide-react";
-import { Fragment } from "react";
+import { Fragment, useEffect, useRef } from "react";
 
 import { LegBreakdown } from "@/components/LegBreakdown";
 import { Badge } from "@/components/ui/badge";
@@ -11,6 +13,7 @@ import type { CandidateRoute } from "@/lib/types";
 interface RouteCardProps {
   route: CandidateRoute;
   directAmount?: number;
+  autoOpen?: boolean;
 }
 
   const RANK_CONFIG = {
@@ -50,7 +53,7 @@ function getRankConfig(rank: number) {
   return RANK_CONFIG[rank as keyof typeof RANK_CONFIG] ?? RANK_CONFIG[3];
 }
 
-export function RouteCard({ route, directAmount }: RouteCardProps) {
+export function RouteCard({ route, directAmount, autoOpen }: RouteCardProps) {
   const targetCurrency = route.path[route.path.length - 1];
   const feeEntries = Object.entries(route.totalFeesByCurrency);
   const cfg = getRankConfig(route.rank);
@@ -61,6 +64,18 @@ export function RouteCard({ route, directAmount }: RouteCardProps) {
     directAmount !== undefined && !isDirectRoute
       ? route.finalAmount - directAmount
       : undefined;
+
+  const detailsRef = useRef<HTMLDetailsElement>(null);
+
+  useEffect(() => {
+    if (!autoOpen) return;
+    const timer = setTimeout(() => {
+      if (detailsRef.current) {
+        detailsRef.current.open = true;
+      }
+    }, 650);
+    return () => clearTimeout(timer);
+  }, [autoOpen]);
 
   return (
     <Card className={"overflow-hidden " + cfg.cardClass}>
@@ -156,7 +171,7 @@ export function RouteCard({ route, directAmount }: RouteCardProps) {
           </div>
         </div>
 
-        <details className="group mt-4">
+        <details ref={detailsRef} className="group mt-4">
           <summary className="flex cursor-pointer list-none items-center justify-between rounded-lg border border-[#1e2329] bg-[#0f1319] px-3 py-2 transition hover:border-[#2b3139]">
             <div className="flex items-center gap-2">
               <span className="text-sm font-medium text-[#848e9c]">Execution Detail</span>
@@ -167,7 +182,7 @@ export function RouteCard({ route, directAmount }: RouteCardProps) {
             </div>
             <ChevronDown className="chevron h-3.5 w-3.5 text-slate-600 transition-transform duration-200 group-open:rotate-180" />
           </summary>
-          <div className="mt-2 mb-1">
+          <div className="details-content mt-2 mb-1">
             <LegBreakdown legs={route.legs} />
           </div>
         </details>

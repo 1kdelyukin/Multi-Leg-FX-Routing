@@ -96,3 +96,20 @@ details[open] summary .chevron { transform: rotate(180deg); }
   opacity: 0;
   animation: route-card-enter 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
+
+/* ── Execution detail panel slide-open ── */
+@keyframes details-content-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scaleY(0.94);
+    transform-origin: top;
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scaleY(1);
+    transform-origin: top;
+  }
+}
+details[open] .details-content {
+  animation: details-content-enter 0.38s cubic-bezier(0.16, 1, 0.3, 1) both;
+}

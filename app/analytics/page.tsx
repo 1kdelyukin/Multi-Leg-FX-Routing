@@ -883,7 +883,7 @@ export default function AnalyticsPage() {
           <div className="flex items-center gap-2">
             <CircleDot className="h-3 w-3 text-[#848e9c]" />
             <span className="text-xs text-[#848e9c]">
-              Fiat charts use daily Frankfurter history; crypto charts use indicative sample data.
+              Designed and built by Kirill Delyukin
             </span>
           </div>
           <div className="flex items-center gap-2">
