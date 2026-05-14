@@ -30,6 +30,7 @@ No database, secrets, API keys, or environment variables are required.
 
 - `app/page.tsx` renders the main application shell.
 - `app/api/routes/route.ts` exposes `POST /api/routes` for route calculation.
+- `app/api/analytics/history/route.ts` exposes `GET /api/analytics/history` for dated FX chart history.
 - `components/` contains the form, warning state, route cards, and leg breakdown table.
 - `data/providers.json` stores live and static provider configuration.
 - `lib/providers.ts` loads provider config and creates static directed edges.
@@ -68,6 +69,14 @@ If the post-fee amount is zero or negative, that candidate path is discarded. Va
 Live providers are fetched with `AbortController` timeouts and `Promise.allSettled`. One provider can be down, malformed, missing a rate, or timed out without failing the whole request. The API returns provider warnings alongside any routes found from remaining live and static providers.
 
 Live responses are cached briefly in memory to reduce repeated calls during local development and review.
+
+## Analytics Charts
+
+Fiat chart modals fetch dated USD quote history through the local Next.js API route. The route tries Frankfurter's time-series API first, then falls back to DeltaMarkets/fawazahmed0 dated CDN files if Frankfurter fails. ExchangeRate-API's no-key open endpoint is not used as a chart fallback because it only serves latest rates; its historical endpoint requires an API key/paid historical access.
+
+For example, `30D` requests the calendar range from 30 days ago through today, normalizes each day into a chart point, and carries the latest available market rate across weekends or not-yet-published current-day data. Hover tooltips show both the rate and calendar date.
+
+Crypto/stablecoin analytics use local indicative sample data because the no-key Frankfurter API does not provide USDT/USDC history.
 
 ## AI Tools Used
 
