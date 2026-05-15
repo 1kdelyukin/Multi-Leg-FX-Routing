@@ -4,22 +4,8 @@ import { CircleDot, ArrowRight } from "lucide-react";
 
 import { Nav } from "@/components/Nav";
 import { RouteForm } from "@/components/RouteForm";
+import { MarketTicker } from "@/components/MarketTicker";
 import { Button } from "@/components/ui/button";
-
-const TICKER_PAIRS = [
-  { pair: "USD → EUR", rate: "0.9142", up: true },
-  { pair: "USD → GBP", rate: "0.7821", up: false },
-  { pair: "EUR → GBP", rate: "0.8556", up: true },
-  { pair: "USD → JPY", rate: "149.32", up: true },
-  { pair: "USD → CAD", rate: "1.3641", up: false },
-  { pair: "EUR → JPY", rate: "163.47", up: true },
-  { pair: "GBP → JPY", rate: "190.89", up: true },
-  { pair: "USD → AUD", rate: "1.5234", up: false },
-  { pair: "USD → CHF", rate: "0.9012", up: false },
-  { pair: "USDT → USD", rate: "1.0001", up: true },
-  { pair: "USDC → EUR", rate: "0.9138", up: false },
-  { pair: "GBP → USDC", rate: "1.2680", up: true },
-] as const;
 
 const STATS = [
   { value: "6", label: "Providers" },
@@ -33,31 +19,7 @@ export default function Home() {
     <div className="h-screen flex flex-col overflow-hidden" style={{ backgroundColor: "#0b0e11" }}>
       <Nav />
 
-      {/* Auto-scrolling pairs ticker */}
-      <div className="relative z-[51] flex-shrink-0 -mt-px bg-[#0d1117] pt-px">
-        {/* Fading top border line */}
-        <div className="absolute top-0 left-0 right-0 h-px" style={{ background: "linear-gradient(to right, #0d1117 0%, #0d1117 4%, transparent 8%, #1e2329 18%, #1e2329 82%, transparent 92%, #0d1117 96%, #0d1117 100%)" }} />
-        {/* Fading bottom border line */}
-        <div className="absolute bottom-0 left-0 right-0 h-px" style={{ background: "linear-gradient(to right, transparent, #1e2329 12%, #1e2329 88%, transparent)" }} />
-        {/* Scrolling content */}
-        <div
-          className="py-2 overflow-hidden"
-          style={{ WebkitMaskImage: "linear-gradient(to right, transparent, black 12%, black 88%, transparent)", maskImage: "linear-gradient(to right, transparent, black 12%, black 88%, transparent)" }}
-        >
-          <div className="ticker-track">
-            {[...TICKER_PAIRS, ...TICKER_PAIRS].map(({ pair, rate, up }, i) => (
-              <div key={i} className="flex items-center gap-2 px-6 whitespace-nowrap">
-                <span className="text-xs font-medium text-white/70">{pair}</span>
-                <span className="text-xs font-semibold text-white">{rate}</span>
-                <span className={`text-xs font-medium ${up ? "text-emerald-400" : "text-red-400"}`}>
-                  {up ? "▲" : "▼"}
-                </span>
-                <span className="text-[#2a3040] mx-2">|</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
+      <MarketTicker />
 
       <section
         style={{

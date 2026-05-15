@@ -34,6 +34,9 @@ const CHART_POINTS: Record<Timeframe, number> = {
   "1Y": 52,
 };
 
+const STABLECOIN_HISTORY_SOURCE = "DeltaMarkets (fawazahmed0)";
+const STABLECOIN_FALLBACK_SOURCE = "USD peg fallback";
+
 interface PairingCard {
   code: string;
   name: string;
@@ -64,6 +67,25 @@ interface HistoricalRateResponse {
   source?: string;
   points?: ChartPoint[];
   error?: string;
+}
+
+function makeFlatHistory(rate: number): Record<Timeframe, number[]> {
+  return {
+    "7D": [rate],
+    "30D": [rate],
+    "90D": [rate],
+    "1Y": [rate],
+  };
+}
+
+function getPairingKey(mode: AnalyticsMode, code: string): string {
+  return `${mode}-${code}`;
+}
+
+function getHistoryUrl(code: string, timeframe: Timeframe): string {
+  return `/api/analytics/history?base=USD&quote=${encodeURIComponent(
+    code,
+  )}&days=${TIMEFRAME_DAYS[timeframe]}`;
 }
 
 const FIAT_PAIRINGS: PairingCard[] = [
@@ -125,58 +147,12 @@ const FIAT_PAIRINGS: PairingCard[] = [
 
 const CRYPTO_PAIRINGS: PairingCard[] = [
   {
-    code: "USDT", name: "Tether USD", rate: "0.9990", weeklyChange: "-0.0006", weeklyPercent: "0.06%", direction: "down", high52: "1.0015", low52: "0.9942",
-    history: {
-      "7D":  [0.9994,0.9992,0.9995,0.9991,0.9996,0.9992,0.9988,0.9994,0.9990,0.9996,0.9992,0.9988,0.9994,0.9998,0.9994,0.9990,0.9995,0.9991,0.9997,0.9993,0.9989,0.9994,0.9990,0.9996,0.9992,0.9988,0.9994,0.9990,0.9986,0.9992,0.9988,0.9995,0.9991,0.9987,0.9993,0.9989,0.9985,0.9991,0.9987,0.9994,0.9990,0.9990],
-      "30D": [0.9996,0.9994,0.9997,0.9993,0.9998,0.9994,0.9990,0.9996,0.9992,0.9998,0.9994,0.9990,0.9995,0.9991,0.9997,0.9993,0.9989,0.9994,0.9990,0.9996,0.9992,0.9988,0.9993,0.9989,0.9995,0.9991,0.9987,0.9992,0.9988,0.9990],
-      "90D": [1.0001,0.9998,1.0002,0.9998,1.0004,0.9999,0.9995,1.0001,0.9997,1.0003,0.9999,0.9995,1.0001,0.9997,1.0003,0.9999,0.9995,1.0000,0.9996,1.0002,0.9998,0.9994,0.9999,0.9995,1.0001,0.9997,0.9993,0.9998,0.9994,1.0000,0.9996,0.9992,0.9997,0.9993,0.9999,0.9995,0.9991,0.9996,0.9992,0.9998,0.9994,0.9990,0.9993,0.9991,0.9990],
-      "1Y":  [1.0005,1.0003,1.0006,1.0002,1.0005,1.0001,1.0004,1.0000,1.0003,0.9999,1.0002,0.9998,1.0001,0.9997,1.0000,0.9996,0.9999,0.9995,0.9998,0.9994,0.9997,0.9993,0.9996,0.9992,0.9995,0.9991,0.9994,0.9990,0.9993,0.9989,0.9992,0.9988,0.9991,0.9987,0.9990,0.9986,0.9989,0.9985,0.9988,0.9984,0.9987,0.9985,0.9988,0.9986,0.9989,0.9987,0.9990,0.9988,0.9991,0.9989,0.9990,0.9990],
-    },
+    code: "USDT", name: "Tether USD", rate: "1.0000", weeklyChange: "+0.0000", weeklyPercent: "0.00%", direction: "up", high52: "1.0000", low52: "1.0000",
+    history: makeFlatHistory(1),
   },
   {
-    code: "USDC", name: "USD Coin", rate: "1.0010", weeklyChange: "+0.0004", weeklyPercent: "0.04%", direction: "up", high52: "1.0024", low52: "0.9965",
-    history: {
-      "7D":  [1.0005,1.0007,1.0004,1.0008,1.0005,1.0002,1.0006,1.0009,1.0006,1.0010,1.0007,1.0004,1.0008,1.0011,1.0008,1.0005,1.0009,1.0006,1.0010,1.0007,1.0004,1.0008,1.0005,1.0010,1.0007,1.0004,1.0008,1.0005,1.0002,1.0006,1.0003,1.0008,1.0005,1.0002,1.0006,1.0009,1.0006,1.0010,1.0007,1.0010,1.0008,1.0010],
-      "30D": [1.0004,1.0006,1.0003,1.0007,1.0004,1.0008,1.0005,1.0002,1.0006,1.0009,1.0006,1.0003,1.0007,1.0004,1.0008,1.0005,1.0002,1.0006,1.0009,1.0006,1.0010,1.0007,1.0004,1.0008,1.0005,1.0009,1.0006,1.0008,1.0005,1.0010],
-      "90D": [0.9999,1.0001,0.9998,1.0002,0.9999,1.0003,1.0000,0.9997,1.0001,1.0004,1.0001,0.9998,1.0002,0.9999,1.0003,1.0000,0.9997,1.0001,1.0004,1.0001,1.0005,1.0002,0.9999,1.0003,1.0000,1.0004,1.0001,0.9998,1.0002,1.0005,1.0002,0.9999,1.0003,1.0006,1.0003,1.0007,1.0004,1.0001,1.0005,1.0008,1.0010,1.0007,1.0010,1.0008,1.0010],
-      "1Y":  [0.9990,0.9992,0.9989,0.9993,0.9990,0.9994,0.9991,0.9988,0.9992,0.9995,0.9992,0.9989,0.9993,0.9996,0.9993,0.9990,0.9994,0.9997,0.9994,0.9991,0.9995,0.9998,0.9995,0.9992,0.9996,0.9999,0.9996,0.9993,0.9997,1.0000,0.9997,0.9994,0.9998,1.0001,0.9998,1.0002,0.9999,0.9996,1.0000,1.0003,1.0000,1.0004,1.0001,0.9998,1.0002,1.0006,1.0003,1.0007,1.0004,1.0008,1.0006,1.0010],
-    },
-  },
-  {
-    code: "JPY", name: "USDT to Japanese Yen", rate: "156.2", weeklyChange: "+1.1120", weeklyPercent: "0.72%", direction: "up", high52: "162.50", low52: "140.30",
-    history: {
-      "7D":  [154.50,154.82,154.45,155.08,154.72,154.35,154.75,155.18,154.82,155.28,154.92,154.55,155.02,155.45,155.08,154.72,155.18,154.82,155.28,154.92,154.55,155.05,154.68,155.18,154.82,154.45,154.98,154.62,154.28,154.82,154.48,155.02,154.68,154.35,154.88,155.32,154.98,155.45,155.12,155.62,155.92,156.20],
-      "30D": [152.80,153.12,152.78,153.42,153.08,152.72,153.18,153.62,153.28,153.75,153.42,153.08,153.55,154.02,153.68,153.35,153.82,154.28,153.95,154.42,154.08,153.72,154.22,154.68,154.35,155.02,155.48,155.15,155.68,156.20],
-      "90D": [147.00,147.52,147.08,147.72,147.28,147.92,147.48,147.05,147.72,148.35,147.92,148.58,148.15,147.72,148.42,149.05,148.62,149.28,148.85,148.42,149.12,149.78,149.35,150.02,149.58,149.15,149.85,150.52,150.08,150.78,150.35,149.92,150.62,151.28,150.85,151.52,151.08,150.65,151.38,152.05,152.75,153.45,154.18,154.92,156.20],
-      "1Y":  [140.50,141.18,140.65,141.42,140.88,141.65,142.42,141.88,142.65,143.42,142.88,143.65,144.42,143.88,144.65,145.42,144.88,145.65,146.42,145.88,146.65,147.42,146.88,147.65,148.42,147.88,148.65,149.42,148.88,149.65,150.42,149.88,150.65,151.42,150.88,151.65,152.42,151.88,152.65,153.42,152.88,153.65,154.42,153.88,154.65,155.42,154.88,155.65,155.12,155.78,156.02,156.20],
-    },
-  },
-  {
-    code: "EUR", name: "USDT to Euro", rate: "0.9220", weeklyChange: "+0.0028", weeklyPercent: "0.30%", direction: "up", high52: "0.9640", low52: "0.8830",
-    history: {
-      "7D":  [0.9180,0.9192,0.9175,0.9198,0.9182,0.9162,0.9182,0.9205,0.9188,0.9212,0.9195,0.9178,0.9202,0.9218,0.9202,0.9182,0.9208,0.9192,0.9218,0.9202,0.9185,0.9208,0.9192,0.9218,0.9202,0.9185,0.9208,0.9192,0.9175,0.9200,0.9184,0.9208,0.9192,0.9175,0.9200,0.9215,0.9198,0.9222,0.9206,0.9220,0.9208,0.9220],
-      "30D": [0.9160,0.9182,0.9162,0.9188,0.9168,0.9195,0.9175,0.9155,0.9178,0.9198,0.9178,0.9195,0.9215,0.9195,0.9218,0.9198,0.9178,0.9202,0.9222,0.9202,0.9225,0.9205,0.9185,0.9210,0.9192,0.9218,0.9198,0.9215,0.9198,0.9220],
-      "90D": [0.9050,0.9072,0.9052,0.9078,0.9058,0.9085,0.9065,0.9045,0.9068,0.9092,0.9072,0.9095,0.9075,0.9055,0.9078,0.9102,0.9082,0.9108,0.9088,0.9068,0.9092,0.9115,0.9095,0.9122,0.9102,0.9082,0.9108,0.9132,0.9112,0.9138,0.9118,0.9098,0.9122,0.9148,0.9128,0.9155,0.9135,0.9115,0.9142,0.9165,0.9182,0.9162,0.9188,0.9168,0.9220],
-      "1Y":  [0.9580,0.9528,0.9562,0.9505,0.9542,0.9485,0.9422,0.9365,0.9402,0.9345,0.9382,0.9325,0.9262,0.9205,0.9242,0.9185,0.9222,0.9165,0.9202,0.9145,0.9182,0.9125,0.9162,0.9108,0.9145,0.9092,0.9128,0.9072,0.9108,0.9055,0.9092,0.9038,0.9075,0.9122,0.9095,0.9138,0.9112,0.9155,0.9128,0.9172,0.9148,0.9165,0.9142,0.9158,0.9135,0.9152,0.9128,0.9175,0.9152,0.9195,0.9175,0.9220],
-    },
-  },
-  {
-    code: "CAD", name: "USDC to Canadian Dollar", rate: "1.3550", weeklyChange: "-0.0041", weeklyPercent: "0.30%", direction: "down", high52: "1.4450", low52: "1.3180",
-    history: {
-      "7D":  [1.3592,1.3578,1.3598,1.3582,1.3602,1.3585,1.3565,1.3585,1.3568,1.3590,1.3572,1.3595,1.3578,1.3558,1.3582,1.3565,1.3588,1.3572,1.3552,1.3578,1.3562,1.3588,1.3572,1.3552,1.3578,1.3562,1.3585,1.3568,1.3548,1.3572,1.3555,1.3578,1.3562,1.3542,1.3568,1.3552,1.3575,1.3558,1.3538,1.3562,1.3548,1.3550],
-      "30D": [1.3610,1.3622,1.3608,1.3625,1.3610,1.3628,1.3612,1.3595,1.3612,1.3628,1.3612,1.3625,1.3610,1.3625,1.3608,1.3622,1.3605,1.3618,1.3602,1.3618,1.3602,1.3615,1.3598,1.3612,1.3595,1.3608,1.3592,1.3578,1.3562,1.3550],
-      "90D": [1.3720,1.3705,1.3722,1.3708,1.3725,1.3710,1.3695,1.3712,1.3698,1.3715,1.3700,1.3685,1.3702,1.3688,1.3705,1.3690,1.3675,1.3692,1.3678,1.3695,1.3680,1.3665,1.3682,1.3668,1.3685,1.3670,1.3655,1.3672,1.3658,1.3675,1.3660,1.3645,1.3662,1.3648,1.3665,1.3650,1.3635,1.3652,1.3638,1.3655,1.3625,1.3608,1.3590,1.3572,1.3550],
-      "1Y":  [1.4300,1.4248,1.4282,1.4225,1.4262,1.4205,1.4242,1.4185,1.4122,1.4065,1.4102,1.4048,1.3985,1.3928,1.3965,1.3912,1.3948,1.3892,1.3928,1.3872,1.3908,1.3852,1.3888,1.3832,1.3868,1.3812,1.3848,1.3792,1.3828,1.3772,1.3808,1.3752,1.3788,1.3732,1.3768,1.3712,1.3748,1.3692,1.3728,1.3672,1.3708,1.3652,1.3688,1.3632,1.3668,1.3648,1.3618,1.3640,1.3618,1.3592,1.3568,1.3550],
-    },
-  },
-  {
-    code: "CHF", name: "USDT to Swiss Franc", rate: "0.8900", weeklyChange: "+0.0019", weeklyPercent: "0.21%", direction: "up", high52: "0.9270", low52: "0.8120",
-    history: {
-      "7D":  [0.8876,0.8888,0.8872,0.8895,0.8878,0.8858,0.8878,0.8902,0.8885,0.8908,0.8892,0.8875,0.8898,0.8915,0.8898,0.8878,0.8902,0.8885,0.8908,0.8892,0.8875,0.8898,0.8882,0.8905,0.8888,0.8868,0.8892,0.8875,0.8858,0.8882,0.8865,0.8888,0.8872,0.8855,0.8878,0.8895,0.8878,0.8902,0.8885,0.8905,0.8892,0.8900],
-      "30D": [0.8855,0.8875,0.8858,0.8878,0.8862,0.8882,0.8865,0.8845,0.8868,0.8888,0.8868,0.8885,0.8905,0.8882,0.8908,0.8885,0.8862,0.8888,0.8908,0.8885,0.8912,0.8888,0.8868,0.8895,0.8875,0.8902,0.8882,0.8898,0.8878,0.8900],
-      "90D": [0.8750,0.8772,0.8752,0.8778,0.8758,0.8785,0.8765,0.8745,0.8768,0.8792,0.8772,0.8795,0.8775,0.8755,0.8778,0.8802,0.8782,0.8808,0.8788,0.8768,0.8792,0.8815,0.8795,0.8822,0.8802,0.8782,0.8808,0.8832,0.8812,0.8838,0.8818,0.8798,0.8822,0.8845,0.8825,0.8852,0.8832,0.8812,0.8838,0.8862,0.8878,0.8858,0.8882,0.8862,0.8900],
-      "1Y":  [0.8200,0.8248,0.8215,0.8268,0.8232,0.8288,0.8252,0.8308,0.8272,0.8328,0.8392,0.8355,0.8412,0.8375,0.8432,0.8398,0.8452,0.8418,0.8472,0.8438,0.8492,0.8458,0.8512,0.8478,0.8532,0.8498,0.8552,0.8518,0.8572,0.8538,0.8592,0.8558,0.8612,0.8578,0.8632,0.8598,0.8652,0.8618,0.8672,0.8638,0.8692,0.8658,0.8712,0.8678,0.8722,0.8695,0.8738,0.8768,0.8808,0.8848,0.8872,0.8900],
-    },
+    code: "USDC", name: "USD Coin", rate: "1.0000", weeklyChange: "+0.0000", weeklyPercent: "0.00%", direction: "up", high52: "1.0000", low52: "1.0000",
+    history: makeFlatHistory(1),
   },
 ];
 
@@ -396,12 +372,13 @@ function SparkLine({ data, direction }: { data: ChartPoint[]; direction: "up" | 
   const chartData = data.length > 0 ? data : [{ date: toIsoDate(getLocalToday()), rate: 0 }];
   const min = Math.min(...chartData.map((point) => point.rate));
   const max = Math.max(...chartData.map((point) => point.rate));
-  const range = max - min || 1;
+  const isFlat = max === min;
+  const range = isFlat ? 1 : max - min;
   const xDenominator = Math.max(1, chartData.length - 1);
 
   const pts = chartData.map((point, i) => ({
     x: (i / xDenominator) * W,
-    y: H - ((point.rate - min) / range) * (H * 0.82) - H * 0.09,
+    y: isFlat ? H * 0.5 : H - ((point.rate - min) / range) * (H * 0.82) - H * 0.09,
     point,
   }));
 
@@ -533,10 +510,76 @@ export default function AnalyticsPage() {
   const [mode, setMode] = useState<AnalyticsMode>("fiat");
   const [selected, setSelected] = useState<PairingCard | null>(null);
   const [timeframe, setTimeframe] = useState<Timeframe>("7D");
+  const [cardChartStates, setCardChartStates] = useState<Record<string, ChartState>>({});
   const [chartState, setChartState] = useState<ChartState>({
     status: "idle",
     points: [],
   });
+
+  useEffect(() => {
+    const visiblePairings = mode === "fiat" ? FIAT_PAIRINGS : CRYPTO_PAIRINGS;
+    const controller = new AbortController();
+
+    setCardChartStates((previous) => {
+      const next = { ...previous };
+      visiblePairings.forEach((pairing) => {
+        next[getPairingKey(mode, pairing.code)] = {
+          status: "loading",
+          points: [],
+          source: mode === "crypto" ? STABLECOIN_HISTORY_SOURCE : "Frankfurter",
+        };
+      });
+      return next;
+    });
+
+    visiblePairings.forEach((pairing) => {
+      const key = getPairingKey(mode, pairing.code);
+      const fallbackPoints = getStaticChartPoints(pairing, "7D");
+
+      fetch(getHistoryUrl(pairing.code, "7D"), { signal: controller.signal })
+        .then(async (response) => {
+          const payload = (await response.json()) as HistoricalRateResponse;
+
+          if (!response.ok) {
+            throw new Error(payload.error ?? "Unable to load historical rates.");
+          }
+
+          const points = payload.points;
+
+          if (!points || points.length === 0) {
+            throw new Error("The historical rate API returned no chart points.");
+          }
+
+          setCardChartStates((previous) => ({
+            ...previous,
+            [key]: {
+              status: "ready",
+              points,
+              source:
+                payload.source ?? (mode === "crypto" ? STABLECOIN_HISTORY_SOURCE : "Frankfurter"),
+            },
+          }));
+        })
+        .catch((error) => {
+          if (controller.signal.aborted) {
+            return;
+          }
+
+          setCardChartStates((previous) => ({
+            ...previous,
+            [key]: {
+              status: "error",
+              points: fallbackPoints,
+              source: mode === "crypto" ? STABLECOIN_FALLBACK_SOURCE : "Saved fallback",
+              error:
+                error instanceof Error ? error.message : "Unable to load historical rates.",
+            },
+          }));
+        });
+    });
+
+    return () => controller.abort();
+  }, [mode]);
 
   useEffect(() => {
     if (!selected) {
@@ -546,28 +589,14 @@ export default function AnalyticsPage() {
 
     const fallbackPoints = getStaticChartPoints(selected, timeframe);
 
-    if (mode === "crypto") {
-      setChartState({
-        status: "ready",
-        points: fallbackPoints,
-        source: "Indicative static sample",
-      });
-      return;
-    }
-
     const controller = new AbortController();
     setChartState({
       status: "loading",
       points: [],
-      source: "Frankfurter",
+      source: mode === "crypto" ? STABLECOIN_HISTORY_SOURCE : "Frankfurter",
     });
 
-    fetch(
-      `/api/analytics/history?base=USD&quote=${encodeURIComponent(
-        selected.code,
-      )}&days=${TIMEFRAME_DAYS[timeframe]}`,
-      { signal: controller.signal },
-    )
+    fetch(getHistoryUrl(selected.code, timeframe), { signal: controller.signal })
       .then(async (response) => {
         const payload = (await response.json()) as HistoricalRateResponse;
 
@@ -593,7 +622,7 @@ export default function AnalyticsPage() {
         setChartState({
           status: "error",
           points: fallbackPoints,
-          source: "Saved fallback",
+          source: mode === "crypto" ? STABLECOIN_FALLBACK_SOURCE : "Saved fallback",
           error: error instanceof Error ? error.message : "Unable to load historical rates.",
         });
       });
@@ -605,19 +634,11 @@ export default function AnalyticsPage() {
     const initialTimeframe = "7D";
     setTimeframe(initialTimeframe);
     setSelected(pairing);
-    setChartState(
-      mode === "crypto"
-        ? {
-            status: "ready",
-            points: getStaticChartPoints(pairing, initialTimeframe),
-            source: "Indicative static sample",
-          }
-        : {
-            status: "loading",
-            points: [],
-            source: "Frankfurter",
-          },
-    );
+    setChartState({
+      status: "loading",
+      points: [],
+      source: mode === "crypto" ? STABLECOIN_HISTORY_SOURCE : "Frankfurter",
+    });
   }
 
   function handleTimeframeChange(nextTimeframe: Timeframe) {
@@ -627,19 +648,11 @@ export default function AnalyticsPage() {
       return;
     }
 
-    setChartState(
-      mode === "crypto"
-        ? {
-            status: "ready",
-            points: getStaticChartPoints(selected, nextTimeframe),
-            source: "Indicative static sample",
-          }
-        : {
-            status: "loading",
-            points: [],
-            source: "Frankfurter",
-          },
-    );
+    setChartState({
+      status: "loading",
+      points: [],
+      source: mode === "crypto" ? STABLECOIN_HISTORY_SOURCE : "Frankfurter",
+    });
   }
 
   const pairings = mode === "fiat" ? FIAT_PAIRINGS : CRYPTO_PAIRINGS;
@@ -702,7 +715,11 @@ export default function AnalyticsPage() {
 
           <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {pairings.map((pairing) => {
-              const cardStats = getPairingStats(pairing, "7D");
+              const cardChartState = cardChartStates[getPairingKey(mode, pairing.code)];
+              const cardStats =
+                cardChartState?.points.length
+                  ? getStatsFromChartPoints(cardChartState.points)
+                  : getPairingStats(pairing, "7D");
 
               return (
                 <article
@@ -828,8 +845,8 @@ export default function AnalyticsPage() {
                     <>
                       <SparkLine data={selectedStats.points} direction={selectedStats.direction} />
                       <div className="flex justify-between pb-1 text-[10px] text-[#4b5563]">
-                        {axisLabels.map((label) => (
-                          <span key={label}>{label}</span>
+                        {axisLabels.map((label, index) => (
+                          <span key={`${label}-${index}`}>{label}</span>
                         ))}
                       </div>
                     </>

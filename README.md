@@ -119,8 +119,11 @@ flowchart LR
 
 - Fiat and crypto/stablecoin pair analytics views.
 - Pair cards with current quote, recent change, and chart entry point.
+- Pair cards and chart modals use the same `/api/analytics/history` data path, so the closed card price matches the opened chart's current price.
 - Chart modal with `7D`, `30D`, `90D`, and `1Y` periods.
 - Fiat charts pull dated daily API data.
+- Stablecoin analytics intentionally show only `USDT` and `USDC`.
+- Stablecoin charts pull dated daily data from fawazahmed0 because that API supports crypto symbols and historical date URLs.
 - Chart tooltip shows rate and date inline, for example `0.85361 Thu, May 14`.
 - Tooltip anchors to the chart edge so it does not cover high points.
 - Historical chart endpoint has a provider fallback chain.
@@ -174,12 +177,6 @@ Typical shape:
 }
 ```
 
-Normalization:
-
-- Use request base as `from`.
-- Each `rates` entry becomes one directed edge: `GBP -> USD`, `GBP -> EUR`, etc.
-- Currency codes are normalized to uppercase.
-
 #### BetaBank - ExchangeRate-API Open Endpoint
 
 Example:
@@ -193,6 +190,14 @@ Possible shapes:
 ```json
 {
   "result": "success",
+  "provider": "...",
+  "documentation": "...",
+  "terms_of_use": "...",
+  "time_last_update_unix": "...",
+  "time_last_update_utc": "...",
+  "time_next_update_unix": "...",
+  "time_next_update_utc": "...",
+  "time_eol_unix": "...",
   "base_code": "GBP",
   "rates": {
     "USD": 1.33
@@ -205,18 +210,20 @@ or:
 ```json
 {
   "result": "success",
+  "provider": "...",
+  "documentation": "...",
+  "terms_of_use": "...",
+  "time_last_update_unix": "...",
+  "time_last_update_utc": "...",
+  "time_next_update_unix": "...",
+  "time_next_update_utc": "...",
+  "time_eol_unix": "...",
   "base_code": "GBP",
   "conversion_rates": {
     "USD": 1.33
   }
 }
 ```
-
-Normalization:
-
-- Accept either `rates` or `conversion_rates`.
-- Reject non-success responses when `result` is present.
-- Convert each valid quote into a directed `RateEdge`.
 
 #### DeltaMarkets - fawazahmed0 Currency API
 
@@ -238,20 +245,24 @@ Typical shape:
 }
 ```
 
-Normalization:
-
-- Lowercase response keys are converted to uppercase internally.
-- The nested base map is converted into directed `RateEdge` objects.
-
 ### Static Stablecoin Providers
 
 GammaCrypto, EpsilonChain, and ZetaSwap use `static_pairs` in `providers.json`.
 
-Important modeling choice:
+
+### Important modeling choice:
 
 - Static pairs are **directed**.
 - The router does **not** infer reverse rates.
 - If `USDT -> JPY` exists but `JPY -> USDT` does not, only `USDT -> JPY` is available.
+
+- Use request base as `from`.
+- Each `rates` entry becomes one directed edge: `GBP -> USD`, `GBP -> EUR`, etc.
+- DeltaMarkets API Currency codes --> Normalized to uppercase.
+- BetaBank API --> Accept either `rates` or `conversion_rates`.
+- BetaBank API --> Reject non-success responses when `result` is present.
+- Convert each valid quote into a directed `RateEdge`.
+- The nested base map is converted into directed `RateEdge` objects.
 
 ### RateEdge Normalization
 
@@ -273,16 +284,71 @@ type RateEdge = {
 
 This lets the graph and fee simulation treat all providers uniformly.
 
+```mermaid
+flowchart TD
+  A["Frankfurter response"] --> N["Normalize into RateEdge[]"]
+  B["ExchangeRate-API response"] --> N
+  C["fawazahmed0 response"] --> N
+  D["static providers.json pairs"] --> N
+  N --> G["Graph routing engine"]
+  G --> P["Enumerate paths, simulate fees, rank top 3"]
+```
+
 ### Failure Handling
 
-The live provider fetch layer is defensive:
+The live provider fetch layer is defensive because public APIs can be slow, unavailable, malformed, or missing specific currency pairs. The app handles this with three main mechanisms.
 
-- Uses `AbortController` timeouts.
-- Uses `Promise.allSettled` so one provider failure does not fail the whole request.
-- Validates response shape before creating edges.
-- Filters missing, invalid, non-finite, zero, and negative rates.
-- Returns provider warnings in the API response.
-- Caches live responses briefly in memory to reduce repeated calls during local testing.
+#### 1. Timeouts
+
+Every live provider request is wrapped with `AbortController`.
+
+If a provider takes too long, the request is cancelled and converted into a warning instead of blocking the entire search.
+
+```text
+BetaBank takes too long
+        |
+        v
+request is aborted
+        |
+        v
+router continues with AlphaFX, DeltaMarkets, and static providers
+```
+
+#### 2. Isolated Provider Failures
+
+Live providers are fetched with `Promise.allSettled`, not `Promise.all`.
+
+That means one failed provider does not fail the whole routing request.
+
+```text
+AlphaFX       fulfilled
+BetaBank      rejected
+DeltaMarkets  fulfilled
+        |
+        v
+Use AlphaFX + DeltaMarkets
+Return warning for BetaBank
+```
+
+#### 3. Response And Rate Validation
+
+The app validates provider responses before turning them into graph edges.
+
+It checks for:
+
+- expected response shape, such as `rates` or `conversion_rates`
+- provider success status when the API returns one
+- missing rates
+- non-numeric rates
+- non-finite values
+- zero or negative rates
+
+Only valid quotes become `RateEdge` objects. Invalid data is skipped so bad provider data cannot produce bad route recommendations.
+
+Additional handling:
+
+- Provider warnings are returned in the API response and shown in the UI.
+- Live responses are cached briefly in memory to reduce repeated calls during local testing.
 
 ## Detailed Architecture Modeling
 
@@ -332,9 +398,18 @@ flowchart TD
   N --> O["Return top 3"]
 ```
 
-### Fee Simulation
+**Path Search**
 
-For each leg:
+Depth-first search is used. That means it starts at the source currency and keeps walking until either:
+- it reaches target currency
+- it hits 3 legs
+- it would revisit a currency
+
+At this stage, the app has only found possible paths.
+
+**Fee Simulation**
+
+Each valid leg is simulated and fees are applied at each stage:
 
 ```text
 total_fee = leg_amount * fee_percent + fee_flat
@@ -345,6 +420,28 @@ leg_output = post_fee_amount * rate
 If `post_fee_amount <= 0`, the leg is invalid and the whole route is discarded.
 
 Flat fees matter because the best route can change by amount size. A route with a low percent fee and high flat fee might be bad for a small amount but strong for a large amount.
+
+**Ranking & Direct Route**
+Inside the backend, the router calculates two things:
+
+**The top 3 best routes**
+After simulating every candidate route, the app sorts them:
+
+```text
+#1 best final recipient amount
+#2 second best
+#3 third best
+```
+
+**The best direct route amount, if a direct route exists.**
+The direct route means a one-leg route:
+If multiple providers quote GBP -> JPY, it checks all of them:
+```text
+GBP -> [AlphaFX] -> JPY
+GBP -> [BetaBank] -> JPY
+GBP -> [DeltaMarkets] -> JPY
+```
+Then it simulates the fee and output for each direct edge and keeps the best direct output for comparison.
 
 ### Fiat And Crypto Route Behavior
 
@@ -370,25 +467,34 @@ GBP -> [AlphaFX] -> CHF -> [AlphaFX] -> JPY
 
 ### Top Moving Price Band
 
-The home page includes a lightweight scrolling price band for visual context.
+The home page includes a lightweight scrolling price band backed by live daily rates fetched once per page load. It uses `GET /api/market/ticker`, which fetches current and previous daily quotes from the fawazahmed0 currency API. This provider is used for the band because it covers both fiat pairs and stablecoin pairs such as `USDT -> USD` and `GBP -> USDC`.
 
 ```mermaid
 flowchart LR
-  Pairs["TICKER_PAIRS array"] --> Duplicate["Duplicate list for seamless loop"]
-  Duplicate --> Track["ticker-track CSS animation"]
-  Track --> Mask["left/right fade mask"]
-  Mask --> Band["moving price band on Home"]
+  Home["Home page"] --> Component["MarketTicker component"]
+  Component --> API["GET /api/market/ticker"]
+  API --> Latest["fawazahmed0 @latest rates"]
+  API --> Previous["fawazahmed0 previous-day rates"]
+  Latest --> NormalizeTicker["Normalize ticker pairs"]
+  Previous --> NormalizeTicker
+  NormalizeTicker --> Direction["Compare latest vs previous"]
+  Direction --> Track["Duplicate list for seamless ticker loop"]
+  Track --> CSS["ticker-track CSS animation + fade mask"]
+  CSS --> Band["moving live price band"]
 ```
 
 Implementation notes:
 
-- The ticker is UI-only market context, not used in route ranking.
+- The ticker is live market context, but it is still not used in route ranking.
+- The route engine fetches its own provider data through `/api/routes`.
+- The ticker endpoint returns `rate`, `previousRate`, `change`, and `up` for each pair.
+- If a ticker request fails, the component shows a loading/fallback state instead of breaking the page.
 - Pairs are duplicated so the animation can loop continuously.
 - CSS masks and faded borders make the band blend into the page.
 
 ### Chart Data Model
 
-Fiat analytics charts pull dated historical points through `GET /api/analytics/history`.
+Analytics charts pull dated historical points through `GET /api/analytics/history`.
 
 Example 30-day request:
 
@@ -396,25 +502,36 @@ Example 30-day request:
 GET /api/analytics/history?base=USD&quote=EUR&days=30
 ```
 
+Stablecoin example:
+
+```http
+GET /api/analytics/history?base=USD&quote=USDT&days=30
+```
+
 If today is May 14, the API requests the calendar range from Apr 14 through May 14. The endpoint returns one chart point per calendar day.
 
 ```mermaid
 sequenceDiagram
-  participant Modal as Analytics modal
+  participant Modal as Analytics cards/modal
   participant API as /api/analytics/history
   participant F as Frankfurter
   participant E as ExchangeRate-API
   participant D as DeltaMarkets/fawazahmed0
 
   Modal->>API: base=USD, quote=EUR, days=30
-  API->>F: /v1/2026-04-14..2026-05-14?base=USD&symbols=EUR
-  alt Frankfurter succeeds
-    F-->>API: dated rate map
-  else Frankfurter fails
-    API->>E: skip as historical backup
-    Note right of API: open.er-api.com is latest-only without API-key historical access
-    API->>D: dated CDN files for each date
+  alt quote is USDT or USDC
+    API->>D: /@2026-04-14/v1/currencies/usd.json ... /@2026-05-14/...
     D-->>API: dated daily rate files
+  else fiat quote
+    API->>F: /v1/2026-04-14..2026-05-14?base=USD&symbols=EUR
+    alt Frankfurter succeeds
+      F-->>API: dated rate map
+    else Frankfurter fails
+      API->>E: skip as historical backup
+      Note right of API: open.er-api.com is latest-only without API-key historical access
+      API->>D: dated CDN files for each date
+      D-->>API: dated daily rate files
+    end
   end
   API->>API: normalize to [{ date, rate, sourceDate, filled }]
   API-->>Modal: chart points + source + warnings
@@ -435,6 +552,22 @@ type HistoricalPoint = {
   sourceDate: string;
   filled: boolean;
 };
+```
+
+Stablecoin analytics:
+
+- The stablecoin view only shows `USDT` and `USDC`.
+- The chart endpoint sends those requests directly to fawazahmed0.
+- fawazahmed0 supports dated URLs and crypto symbols, so `USD -> USDT` and `USD -> USDC` return real daily points.
+- If the API fails, the UI falls back to a flat USD peg sample so the modal still renders.
+
+```mermaid
+flowchart LR
+  A["Open USDT or USDC chart"] --> B["GET /api/analytics/history"]
+  B --> C["Prefer fawazahmed0 dated files"]
+  C --> D["Normalize usd.usdt or usd.usdc"]
+  D --> E["Render daily stablecoin chart"]
+  C -->|failure| F["Use flat peg fallback"]
 ```
 
 Tooltip behavior:

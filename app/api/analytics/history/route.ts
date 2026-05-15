@@ -35,6 +35,7 @@ const FAWAZ_CLOUDFLARE_HOST = "currency-api.pages.dev";
 const CACHE_TTL_MS = 10 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 5000;
 const FAWAZ_CONCURRENCY = 12;
+const FAWAZ_HISTORICAL_CODES = new Set(["USDT", "USDC"]);
 const cache = new Map<string, { expiresAt: number; data: unknown }>();
 
 export const dynamic = "force-dynamic";
@@ -120,6 +121,33 @@ async function fetchHistoricalPointsWithFallback(
 ): Promise<HistoricalProviderResult> {
   const warnings: ProviderWarning[] = [];
 
+  if (shouldPreferFawazHistory(base, quote)) {
+    try {
+      return {
+        source: "DeltaMarkets (fawazahmed0)",
+        points: await fetchFawazPoints(base, quote, startDate, endDate),
+        warnings,
+      };
+    } catch (error) {
+      warnings.push({
+        provider: "DeltaMarkets (fawazahmed0)",
+        message: getErrorMessage(error),
+      });
+    }
+
+    warnings.push({
+      provider: "Frankfurter",
+      message: "Skipped for stablecoin chart fallback: Frankfurter does not cover USDT or USDC.",
+    });
+    warnings.push({
+      provider: "ExchangeRate-API",
+      message:
+        "Skipped for chart fallback: the no-key open.er-api.com endpoint is latest-only; dated history requires their API-key historical endpoint.",
+    });
+
+    throw new HistoricalProviderError("All historical rate providers failed.", warnings);
+  }
+
   try {
     return {
       source: "Frankfurter",
@@ -153,6 +181,10 @@ async function fetchHistoricalPointsWithFallback(
   }
 
   throw new HistoricalProviderError("All historical rate providers failed.", warnings);
+}
+
+function shouldPreferFawazHistory(base: string, quote: string): boolean {
+  return FAWAZ_HISTORICAL_CODES.has(base) || FAWAZ_HISTORICAL_CODES.has(quote);
 }
 
 async function fetchFrankfurterPoints(

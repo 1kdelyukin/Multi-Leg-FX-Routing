@@ -80,7 +80,7 @@ export function RouteResults({ response, error, isLoading }: RouteResultsProps) 
           <span className="text-cyan-400 font-semibold">Find Optimal Routes</span> to compare
           top-3 net recipient outcomes across all providers.
         </p>
-        <div className="mt-6 flex gap-3">
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
           {[
             { label: "Multi-leg", desc: "Up to 3 hops" },
             { label: "Fee-aware", desc: "All charges included" },
@@ -88,10 +88,12 @@ export function RouteResults({ response, error, isLoading }: RouteResultsProps) 
           ].map(({ label, desc }) => (
             <div
               key={label}
-              className="rounded-lg border border-[#1e2329] bg-[#161a1e] px-3 py-2 text-center"
+              className="flex min-w-[175px] items-center justify-center gap-1.5 rounded-lg border border-[#1e2329] bg-[#161a1e] px-4 py-2 text-center"
             >
-              <span className="text-[11px] font-semibold text-[#eaecef]">{label}</span>
-              <span className="text-xs text-[#848e9c] mt-0.5">{desc}</span>
+              <span className="whitespace-nowrap text-[11px] font-semibold text-[#eaecef]">
+                {label}
+              </span>
+              <span className="whitespace-nowrap text-xs text-[#848e9c]">{desc}</span>
             </div>
           ))}
         </div>
