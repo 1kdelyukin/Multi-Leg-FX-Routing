@@ -1,6 +1,6 @@
 # Multi-Leg FX Router
 
-A Vercel-ready TypeScript web app for finding the top 3 highest-output FX/payment routes between a source currency, target currency, and amount. The router supports paths with up to 3 legs, mixes fiat brokers and stablecoin venues when allowed, applies every provider fee per leg, and keeps returning useful routes when one live provider fails.
+Live Deploy: https://sdm-orcin-five.vercel.app 
 
 ## Table Of Contents
 
