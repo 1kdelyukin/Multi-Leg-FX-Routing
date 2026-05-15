@@ -70,7 +70,7 @@ export function RouteResults({ response, error, isLoading }: RouteResultsProps) 
 
   if (!response) {
     return (
-      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#2b3139] bg-[#0f1319] p-14 text-center">
+      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[#2b3139] bg-[#0f1319] p-6 text-center sm:p-14">
         <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-[#161a1e] border border-[#2b3139]">
           <Route className="h-6 w-6 text-slate-500" />
         </div>

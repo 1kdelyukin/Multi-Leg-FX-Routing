@@ -81,7 +81,7 @@ export function RouteCard({ route, directAmount, autoOpen }: RouteCardProps) {
     <Card className={"overflow-hidden " + cfg.cardClass}>
       <div style={{ height: "2px", background: cfg.accentBar }} />
 
-      <CardContent className="pt-4 pb-0">
+      <CardContent className="px-3 pt-4 pb-0 sm:px-5">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
 
           <div className="space-y-3 min-w-0 flex-1">
@@ -90,7 +90,7 @@ export function RouteCard({ route, directAmount, autoOpen }: RouteCardProps) {
                 <RankIcon className={"h-3 w-3 " + cfg.iconClass} />
                 #{route.rank}
               </div>
-              <span className={"text-2xl font-bold tabular-nums tracking-tight " + cfg.amountClass}>
+              <span className={"text-xl font-bold tabular-nums tracking-tight sm:text-2xl " + cfg.amountClass}>
                 {formatAmount(route.finalAmount, targetCurrency)}
               </span>
               {delta !== undefined && (
@@ -112,7 +112,7 @@ export function RouteCard({ route, directAmount, autoOpen }: RouteCardProps) {
               )}
             </div>
 
-            <div className="flex flex-wrap items-center gap-1">
+            <div className="flex flex-wrap items-center gap-x-1 gap-y-1.5">
               <span className="font-mono-trading rounded-md border border-slate-600/60 bg-slate-800 px-2.5 py-1 text-[11px] font-bold text-slate-200 flex items-center gap-1.5">
                 {getCurrencyFlag(route.legs[0]?.from) && (
                   <Image src={getCurrencyFlag(route.legs[0].from)!} alt={route.legs[0].from} width={16} height={16} className="rounded-sm object-cover" />
@@ -156,7 +156,7 @@ export function RouteCard({ route, directAmount, autoOpen }: RouteCardProps) {
             </div>
           </div>
 
-      <div className="shrink-0 rounded-lg border border-[#2b3139] bg-[#0f1319] px-4 py-3 min-w-[148px]">
+      <div className="w-full shrink-0 rounded-lg border border-[#2b3139] bg-[#0f1319] px-4 py-3 sm:w-auto min-w-[148px]">
           <p className="text-[10px] font-medium text-[#848e9c] mb-2.5">Total Fees</p>
             <div className="space-y-1.5">
               {feeEntries.map(([currency, amt]) => (

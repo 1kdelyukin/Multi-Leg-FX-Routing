@@ -638,9 +638,9 @@ npm run build
 
 ## AI Tools Used
 
-I used OpenAI Codex as an implementation partner to scaffold the Next.js project, build the routing engine, create the API routes, develop the UI, and add tests. I used it iteratively: first for the core graph and fee model, then for provider integration, then for UI polish and analytics chart behavior.
+I used OpenAI Codex, Copilot and Claude Opus as implementation partners to scaffold the Next.js project, build the routing engine, code API routes, develop the UI, and add tests. I used it iteratively: first for the core graph and fee model, then for provider integration, then for UI polish and analytics chart behavior.
 
-The important human decisions were the routing model and failure behavior: enumerate and simulate every valid route instead of using a naive shortest-path algorithm, keep provider failures isolated, and show fees by currency rather than inventing a misleading single total.
+The important human decisions were the Route Search Model and failure behavior: enumerate and simulate every valid route instead of using a naive shortest-path algorithm, keep provider failures isolated, and show fees by currency rather than inventing a misleading single total.
 
 ## One Thing The AI Got Wrong
 
@@ -648,4 +648,4 @@ The easy mistake was treating provider fees as one total number. That is wrong b
 
 ## What I Would Do Differently With More Time
 
-I would add richer quote freshness and observability: provider latency, cache age, per-base success rates, and a small debug panel for which providers contributed each returned route. That would make operational review easier without changing the routing model.
+In real production enveriments and with more time I would add richer quote freshness and observability: provider latency, cache age, per-base success rates, and adapt the UI for better mobile use.

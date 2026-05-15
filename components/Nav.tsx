@@ -56,6 +56,29 @@ export function Nav() {
           </div>
 
         </div>
+
+        <nav className="flex border-t border-[#1e2329] py-2 md:hidden">
+          <div className="grid w-full grid-cols-3 gap-1 rounded-lg border border-[#1e2329] bg-[#111820] p-1">
+            {NAV_LINKS.map(({ label, href, icon: Icon }) => {
+              const active = pathname === href;
+              return (
+                <Link
+                  key={label}
+                  href={href}
+                  className={
+                    "flex items-center justify-center gap-1.5 rounded-md px-2 py-2 text-xs font-semibold transition-colors " +
+                    (active
+                      ? "bg-white/5 text-white"
+                      : "text-[#848e9c] hover:bg-white/5 hover:text-white")
+                  }
+                >
+                  <Icon className="h-3.5 w-3.5" />
+                  {label}
+                </Link>
+              );
+            })}
+          </div>
+        </nav>
       </div>
     </header>
   );

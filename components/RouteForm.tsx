@@ -178,11 +178,11 @@ export function RouteForm({ defaultFrom, defaultTo, defaultAmount, defaultRouteM
       {!hideForm && <form onSubmit={handleSubmit} className="h-fit">
         <Card className="border-[#1e2329] bg-[#161a1e] overflow-hidden">
 
-          <CardContent className="pt-5 space-y-5">
+          <CardContent className="space-y-4 pt-4 sm:space-y-5 sm:pt-5">
 
             <div>
               <p className="text-xs font-medium text-[#848e9c] mb-2">Currency Pair</p>
-              <div className="grid grid-cols-[1fr_36px_1fr] items-center gap-1.5">
+              <div className="grid grid-cols-[minmax(0,1fr)_36px_minmax(0,1fr)] items-center gap-1.5">
                 <div>
                   <p className="text-xs text-[#848e9c] mb-1">Sell</p>
                   <CurrencySelect

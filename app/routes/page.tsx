@@ -93,7 +93,7 @@ function PreviewWidget({
       }}
       className="space-y-3"
     >
-      <div className="rounded-xl border border-[#2b3139] bg-[#151a20] p-3 shadow-lg">
+      <div className="rounded-xl border border-[#2b3139] bg-[#151a20] p-2.5 shadow-lg sm:p-3">
         <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-[minmax(190px,0.7fr)_minmax(360px,1.35fr)_240px_76px] xl:items-stretch">
           <label
             htmlFor="route-source-amount"
@@ -101,7 +101,7 @@ function PreviewWidget({
           >
             <span className="text-xs font-medium text-[#848e9c]">Amount</span>
             <div className="mt-1 flex h-10 items-center gap-2">
-              <span className="shrink-0 text-3xl font-bold leading-none text-white">
+              <span className="shrink-0 text-2xl font-bold leading-none text-white sm:text-3xl">
                 {sourceCurrencySymbol}
               </span>
               <input
@@ -112,7 +112,7 @@ function PreviewWidget({
                 }
                 inputMode="decimal"
                 type="text"
-                className="h-full min-w-0 flex-1 bg-transparent text-3xl font-bold leading-none tabular-nums text-white outline-none placeholder:text-[#3d4553]"
+                className="h-full min-w-0 flex-1 bg-transparent text-2xl font-bold leading-none tabular-nums text-white outline-none placeholder:text-[#3d4553] sm:text-3xl"
                 placeholder="0"
               />
             </div>
@@ -120,7 +120,7 @@ function PreviewWidget({
 
           <div className="rounded-lg border border-[#252b33] bg-[#0b0e11] px-3 py-2.5">
             <p className="text-xs font-medium text-[#848e9c]">Route</p>
-            <div className="mt-2 grid grid-cols-[1fr_36px_1fr] items-center gap-2">
+            <div className="mt-2 grid grid-cols-[minmax(0,1fr)_36px_minmax(0,1fr)] items-center gap-2">
               <CurrencySelect
                 value={from}
                 onValueChange={onFromChange}
@@ -185,7 +185,7 @@ function PreviewWidget({
             disabled={isSearchDisabled}
             aria-label="Search routes"
             title="Search routes"
-            className="flex h-full min-h-[76px] w-full items-center justify-center rounded-lg bg-cyan-600 text-white transition-colors hover:bg-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 disabled:cursor-not-allowed disabled:bg-[#2b3139] disabled:text-[#848e9c]"
+            className="flex h-full min-h-[52px] w-full items-center justify-center rounded-lg bg-cyan-600 text-white transition-colors hover:bg-cyan-500 focus:outline-none focus:ring-2 focus:ring-cyan-500/40 disabled:cursor-not-allowed disabled:bg-[#2b3139] disabled:text-[#848e9c] xl:min-h-[76px]"
           >
             <Search className="h-5 w-5" />
           </button>
@@ -289,7 +289,7 @@ function RoutesContent() {
       <Nav />
 
       <main className="flex-1">
-        <div className="mx-auto max-w-screen-xl px-6 py-10">
+        <div className="mx-auto max-w-screen-xl px-4 py-6 sm:px-6 sm:py-10">
 
           <div className="mb-8">
             <PreviewWidget
@@ -319,7 +319,7 @@ function RoutesContent() {
       </main>
 
       <footer className="border-t border-[#1e2329] py-4">
-        <div className="mx-auto max-w-screen-xl px-6 flex items-center justify-between gap-4">
+        <div className="mx-auto max-w-screen-xl px-4 sm:px-6 flex flex-col items-center justify-between gap-3 sm:flex-row sm:gap-4">
           <div className="flex items-center gap-2">
             <CircleDot className="h-3 w-3 text-[#848e9c]" />
             <span className="text-xs text-[#848e9c]">

@@ -670,7 +670,7 @@ export default function AnalyticsPage() {
       <Nav />
 
       <main className="flex-1">
-        <div className="mx-auto max-w-screen-xl px-6 py-10">
+        <div className="mx-auto max-w-screen-xl px-4 py-6 sm:px-6 sm:py-10">
           <div className="flex flex-col gap-5 border-b border-[#1e2329] pb-6 md:flex-row md:items-end md:justify-between">
             <div>
               <p className="text-xs font-semibold uppercase tracking-widest text-cyan-400">
@@ -681,8 +681,8 @@ export default function AnalyticsPage() {
               </h1>
             </div>
 
-            <div className="rounded-xl border border-[#2b3139] bg-[#151a20] p-1.5">
-              <div className="relative grid h-10 w-64 grid-cols-2 rounded-lg border border-[#2b3139] bg-[#0b0e11] p-1">
+            <div className="w-full rounded-xl border border-[#2b3139] bg-[#151a20] p-1.5 sm:w-auto">
+              <div className="relative grid h-10 w-full grid-cols-2 rounded-lg border border-[#2b3139] bg-[#0b0e11] p-1 sm:w-64">
                 <span
                   className={
                     "absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-md bg-cyan-500/20 ring-1 ring-cyan-400/30 transition-transform duration-200 " +
@@ -724,7 +724,7 @@ export default function AnalyticsPage() {
               return (
                 <article
                   key={`${mode}-${pairing.name}`}
-                  className="rounded-xl border border-[#1e2329] bg-[#151a20] p-6 shadow-lg shadow-black/20 transition-colors hover:border-cyan-500/30"
+                  className="rounded-xl border border-[#1e2329] bg-[#151a20] p-5 shadow-lg shadow-black/20 transition-colors hover:border-cyan-500/30 sm:p-6"
                 >
                   <div className="flex items-center gap-3">
                     <CurrencyIcon code={pairing.code} />
@@ -732,7 +732,7 @@ export default function AnalyticsPage() {
                   </div>
 
                   <p className="mt-8 text-sm text-[#9aa4b2]">{baseLabel}</p>
-                  <p className="mt-3 text-3xl font-bold tracking-tight text-white">
+                  <p className="mt-3 break-words text-2xl font-bold tracking-tight text-white sm:text-3xl">
                     {cardStats.currentText} {pairing.code}
                   </p>
 
@@ -765,7 +765,7 @@ export default function AnalyticsPage() {
       <Dialog.Root open={!!selected} onOpenChange={(open) => { if (!open) setSelected(null); }}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm" />
-          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-[#2b3139] bg-[#151a20] p-6 shadow-2xl focus:outline-none">
+          <Dialog.Content className="fixed left-1/2 top-1/2 z-50 max-h-[calc(100dvh-24px)] w-[calc(100%-24px)] max-w-md -translate-x-1/2 -translate-y-1/2 overflow-y-auto rounded-2xl border border-[#2b3139] bg-[#151a20] p-4 shadow-2xl focus:outline-none sm:w-full sm:p-6">
             {selected && (
               <>
                 {/* Header */}
@@ -788,7 +788,7 @@ export default function AnalyticsPage() {
 
                 {/* Current rate */}
                 <div className="mt-5">
-                  <p className="text-3xl font-bold tracking-tight text-white">
+                  <p className="break-words text-2xl font-bold tracking-tight text-white sm:text-3xl">
                     {selectedStats?.currentText ?? "Loading"}{" "}
                     <span className="text-xl text-[#848e9c]">{selected.code}</span>
                   </p>
@@ -858,7 +858,7 @@ export default function AnalyticsPage() {
                 </div>
 
                 {/* Stats row */}
-                <div className="mt-4 grid grid-cols-3 gap-3">
+                <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div className="rounded-lg border border-[#2b3139] bg-[#0b0e11] p-3">
                     <p className="text-[11px] text-[#848e9c]">Current</p>
                     <p className="mt-1 text-sm font-bold text-white">
@@ -896,7 +896,7 @@ export default function AnalyticsPage() {
       </Dialog.Root>
 
       <footer className="border-t border-[#1e2329] py-4">
-        <div className="mx-auto max-w-screen-xl px-6 flex items-center justify-between gap-4">
+        <div className="mx-auto max-w-screen-xl px-4 sm:px-6 flex flex-col items-center justify-between gap-3 sm:flex-row sm:gap-4">
           <div className="flex items-center gap-2">
             <CircleDot className="h-3 w-3 text-[#848e9c]" />
             <span className="text-xs text-[#848e9c]">
