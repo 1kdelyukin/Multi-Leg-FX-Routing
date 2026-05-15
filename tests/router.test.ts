@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { calculateLeg } from "../lib/fees";
 import { findCandidatePaths } from "../lib/graph";
-import { rankRoutesForEdges } from "../lib/router";
+import { filterEdgesForMode, rankRoutesForEdges } from "../lib/router";
 import type { RateEdge } from "../lib/types";
 
 function edge(
@@ -107,5 +107,23 @@ describe("route ranking", () => {
       "LowFeeSecond",
     ]);
     expect(routes[0].finalAmount).toBeGreaterThan(routes[1].finalAmount);
+  });
+});
+
+describe("route mode filtering", () => {
+  it("excludes stablecoin currencies in fiat-only mode even from fiat providers", () => {
+    const edges = [
+      edge("GBP", "USD", "FiatA", 1.25),
+      edge("USD", "EUR", "FiatB", 0.92),
+      edge("JPY", "USDT", "FiatC", 0.0063),
+      edge("GBP", "USDC", "StableVenue", 1.26),
+    ];
+
+    const filtered = filterEdgesForMode(edges, "fiat_only");
+
+    expect(filtered.map((filteredEdge) => `${filteredEdge.from}->${filteredEdge.to}`)).toEqual([
+      "GBP->USD",
+      "USD->EUR",
+    ]);
   });
 });

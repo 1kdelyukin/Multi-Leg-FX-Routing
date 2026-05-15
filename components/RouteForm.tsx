@@ -16,7 +16,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import { Separator } from "@/components/ui/separator";
-import { formatAmountInput, normalizeAmountInput } from "@/lib/formatting";
+import {
+  FIAT_CURRENCIES,
+  formatAmountInput,
+  isFiatCurrency,
+  normalizeAmountInput,
+} from "@/lib/formatting";
 import type { RouteMode, RoutingResponse } from "@/lib/types";
 
 interface RouteFormProps {
@@ -31,10 +36,19 @@ interface RouteFormProps {
 
 export function RouteForm({ defaultFrom, defaultTo, defaultAmount, defaultRouteMode, autoSubmit, navigateOnSubmit, hideForm }: RouteFormProps = {}) {
   const router = useRouter();
-  const [source, setSource] = useState(defaultFrom ?? "GBP");
-  const [target, setTarget] = useState(defaultTo ?? "JPY");
+  const initialMode = defaultRouteMode ?? "all";
+  const initialSource =
+    initialMode === "fiat_only" && !isFiatCurrency(defaultFrom ?? "GBP")
+      ? "USD"
+      : defaultFrom ?? "GBP";
+  const initialTarget =
+    initialMode === "fiat_only" && !isFiatCurrency(defaultTo ?? "JPY")
+      ? FIAT_CURRENCIES.find((currency) => currency !== initialSource) ?? "EUR"
+      : defaultTo ?? "JPY";
+  const [source, setSource] = useState(initialSource);
+  const [target, setTarget] = useState(initialTarget);
   const [amount, setAmount] = useState(normalizeAmountInput(defaultAmount ?? ""));
-  const [routeMode, setRouteMode] = useState<RouteMode>(defaultRouteMode ?? "all");
+  const [routeMode, setRouteMode] = useState<RouteMode>(initialMode);
   const [response, setResponse] = useState<RoutingResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -118,10 +132,10 @@ export function RouteForm({ defaultFrom, defaultTo, defaultAmount, defaultRouteM
     if (autoSubmit && !submitted.current) {
       submitted.current = true;
       submitRoutes(
-        defaultFrom ?? "GBP",
-        defaultTo ?? "JPY",
+        initialSource,
+        initialTarget,
         normalizeAmountInput(defaultAmount ?? "1000"),
-        defaultRouteMode ?? "all",
+        initialMode,
       );
     }
   }, []);
@@ -130,6 +144,33 @@ export function RouteForm({ defaultFrom, defaultTo, defaultAmount, defaultRouteM
     setSource(target);
     setTarget(source);
   }
+
+  function pickFallbackFiat(otherCurrency: string, preferredCurrency: string) {
+    if (isFiatCurrency(preferredCurrency) && preferredCurrency !== otherCurrency) {
+      return preferredCurrency;
+    }
+
+    return FIAT_CURRENCIES.find((currency) => currency !== otherCurrency) ?? "USD";
+  }
+
+  function handleRouteModeChange(nextMode: RouteMode) {
+    setRouteMode(nextMode);
+
+    if (nextMode !== "fiat_only") {
+      return;
+    }
+
+    setSource((currentSource) =>
+      isFiatCurrency(currentSource) ? currentSource : pickFallbackFiat(target, "USD"),
+    );
+    setTarget((currentTarget) =>
+      isFiatCurrency(currentTarget)
+        ? currentTarget
+        : pickFallbackFiat(isFiatCurrency(source) ? source : "USD", "EUR"),
+    );
+  }
+
+  const currencyOptions = routeMode === "fiat_only" ? FIAT_CURRENCIES : undefined;
 
   return (
     <div className={navigateOnSubmit || hideForm ? undefined : "grid gap-4 lg:grid-cols-[320px_1fr]"}>
@@ -144,7 +185,11 @@ export function RouteForm({ defaultFrom, defaultTo, defaultAmount, defaultRouteM
               <div className="grid grid-cols-[1fr_36px_1fr] items-center gap-1.5">
                 <div>
                   <p className="text-xs text-[#848e9c] mb-1">Sell</p>
-                  <CurrencySelect value={source} onValueChange={setSource} />
+                  <CurrencySelect
+                    value={source}
+                    onValueChange={setSource}
+                    currencies={currencyOptions}
+                  />
                 </div>
 
                 <button
@@ -158,7 +203,11 @@ export function RouteForm({ defaultFrom, defaultTo, defaultAmount, defaultRouteM
 
                 <div>
                   <p className="text-xs text-[#848e9c] mb-1">Buy</p>
-                  <CurrencySelect value={target} onValueChange={setTarget} />
+                  <CurrencySelect
+                    value={target}
+                    onValueChange={setTarget}
+                    currencies={currencyOptions}
+                  />
                 </div>
               </div>
             </div>
@@ -206,7 +255,7 @@ export function RouteForm({ defaultFrom, defaultTo, defaultAmount, defaultRouteM
               <div className="grid grid-cols-2 gap-1.5">
                 <button
                   type="button"
-                  onClick={() => setRouteMode("all")}
+                  onClick={() => handleRouteModeChange("all")}
                   className={
                     "group flex flex-col items-center gap-1.5 rounded-lg border py-3 px-2 text-center transition " +
                     (routeMode === "all"
@@ -220,7 +269,7 @@ export function RouteForm({ defaultFrom, defaultTo, defaultAmount, defaultRouteM
                 </button>
                 <button
                   type="button"
-                  onClick={() => setRouteMode("fiat_only")}
+                  onClick={() => handleRouteModeChange("fiat_only")}
                   className={
                     "group flex flex-col items-center gap-1.5 rounded-lg border py-3 px-2 text-center transition " +
                     (routeMode === "fiat_only"

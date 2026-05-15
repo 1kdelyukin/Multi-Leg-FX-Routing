@@ -7,6 +7,7 @@ import {
   normalizeCurrencyCode,
 } from "./providers";
 import { fetchLiveProviderEdges } from "./rates";
+import { isFiatCurrency } from "./formatting";
 import type {
   CandidateRoute,
   Provider,
@@ -165,9 +166,14 @@ function getProviderBases(provider: Provider, universe: string[]): string[] {
   return universe.filter((currency) => supported.has(currency));
 }
 
-function filterEdgesForMode(edges: RateEdge[], mode: RouteMode): RateEdge[] {
+export function filterEdgesForMode(edges: RateEdge[], mode: RouteMode): RateEdge[] {
   if (mode === "fiat_only") {
-    return edges.filter((edge) => edge.providerType === "fiat_broker");
+    return edges.filter(
+      (edge) =>
+        edge.providerType === "fiat_broker" &&
+        isFiatCurrency(edge.from) &&
+        isFiatCurrency(edge.to),
+    );
   }
 
   return edges;

@@ -9,9 +9,11 @@ import { Nav } from "@/components/Nav";
 import { RouteForm } from "@/components/RouteForm";
 import { CurrencySelect } from "@/components/ui/currency-select";
 import {
+  FIAT_CURRENCIES,
   formatAmount,
   formatAmountInput,
   getCurrencySymbol,
+  isFiatCurrency,
   normalizeAmountInput,
 } from "@/lib/formatting";
 import type { RouteMode } from "@/lib/types";
@@ -45,12 +47,18 @@ function PreviewWidget({
   const [previewLoading, setPreviewLoading] = useState(false);
   const amountNumber = Number(amount);
   const sourceCurrencySymbol = getCurrencySymbol(from);
+  const currencyOptions = routeMode === "fiat_only" ? FIAT_CURRENCIES : undefined;
+  const hasInvalidFiatOnlyCurrency =
+    routeMode === "fiat_only" && (!isFiatCurrency(from) || !isFiatCurrency(to));
   const isSearchDisabled =
-    !Number.isFinite(amountNumber) || amountNumber <= 0 || from === to;
+    !Number.isFinite(amountNumber) ||
+    amountNumber <= 0 ||
+    from === to ||
+    hasInvalidFiatOnlyCurrency;
 
   useEffect(() => {
     const num = Number(amount);
-    if (!num || from === to) { setPreview(null); return; }
+    if (!num || from === to || hasInvalidFiatOnlyCurrency) { setPreview(null); return; }
     const controller = new AbortController();
     let active = true;
     setPreviewLoading(true);
@@ -75,7 +83,7 @@ function PreviewWidget({
       active = false;
       controller.abort();
     };
-  }, [from, to, amount, routeMode]);
+  }, [from, to, amount, routeMode, hasInvalidFiatOnlyCurrency]);
 
   return (
     <form
@@ -116,6 +124,7 @@ function PreviewWidget({
               <CurrencySelect
                 value={from}
                 onValueChange={onFromChange}
+                currencies={currencyOptions}
                 align="start"
                 buttonClassName="h-9"
               />
@@ -132,6 +141,7 @@ function PreviewWidget({
               <CurrencySelect
                 value={to}
                 onValueChange={onToChange}
+                currencies={currencyOptions}
                 align="end"
                 buttonClassName="h-9"
               />
@@ -185,7 +195,11 @@ function PreviewWidget({
       <div className="flex flex-col gap-2 rounded-lg border border-[#1e2329] bg-[#0f1318] px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-xs font-medium text-[#848e9c]">Estimated receive</span>
         <div className="flex min-h-7 items-center gap-2 text-right">
-          {previewLoading ? (
+          {hasInvalidFiatOnlyCurrency ? (
+            <span className="text-xs font-semibold text-amber-300">
+              Fiat Only supports fiat currencies only
+            </span>
+          ) : previewLoading ? (
             <Loader2 className="h-4 w-4 animate-spin text-[#848e9c]" />
           ) : preview !== null ? (
             <span className="text-xl font-bold tabular-nums text-white">
@@ -203,16 +217,57 @@ function PreviewWidget({
 function RoutesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const initialRouteMode: RouteMode =
+    searchParams.get("mode") === "fiat_only" ? "fiat_only" : "all";
+  const initialFrom = searchParams.get("from") ?? "GBP";
+  const initialTo = searchParams.get("to") ?? "JPY";
+  const safeInitialFrom =
+    initialRouteMode === "fiat_only" && !isFiatCurrency(initialFrom) ? "USD" : initialFrom;
+  const safeInitialTo =
+    initialRouteMode === "fiat_only" && !isFiatCurrency(initialTo)
+      ? FIAT_CURRENCIES.find((currency) => currency !== safeInitialFrom) ?? "EUR"
+      : initialTo;
 
-  const [from, setFrom] = useState(searchParams.get("from") ?? "GBP");
-  const [to, setTo] = useState(searchParams.get("to") ?? "JPY");
+  const [from, setFrom] = useState(safeInitialFrom);
+  const [to, setTo] = useState(safeInitialTo);
   const [amount, setAmount] = useState(
     normalizeAmountInput(searchParams.get("amount") ?? ""),
   );
-  const [routeMode, setRouteMode] = useState<RouteMode>(
-    searchParams.get("mode") === "fiat_only" ? "fiat_only" : "all",
-  );
+  const [routeMode, setRouteMode] = useState<RouteMode>(initialRouteMode);
   const hasParams = !!(searchParams.get("from") && searchParams.get("to") && searchParams.get("amount"));
+
+  function pickFallbackFiat(otherCurrency: string, preferredCurrency: string) {
+    if (isFiatCurrency(preferredCurrency) && preferredCurrency !== otherCurrency) {
+      return preferredCurrency;
+    }
+
+    return FIAT_CURRENCIES.find((currency) => currency !== otherCurrency) ?? "USD";
+  }
+
+  function handleRouteModeChange(nextMode: RouteMode) {
+    setRouteMode(nextMode);
+
+    if (nextMode !== "fiat_only") {
+      return;
+    }
+
+    setFrom((currentFrom) => {
+      if (isFiatCurrency(currentFrom)) {
+        return currentFrom;
+      }
+
+      return pickFallbackFiat(to, "USD");
+    });
+
+    setTo((currentTo) => {
+      if (isFiatCurrency(currentTo)) {
+        return currentTo;
+      }
+
+      const nextFrom = isFiatCurrency(from) ? from : "USD";
+      return pickFallbackFiat(nextFrom, "EUR");
+    });
+  }
 
   function navigate() {
     const params = new URLSearchParams({
@@ -245,7 +300,7 @@ function RoutesContent() {
               onFromChange={setFrom}
               onToChange={setTo}
               onAmountChange={setAmount}
-              onRouteModeChange={setRouteMode}
+              onRouteModeChange={handleRouteModeChange}
               onSwap={handleSwap}
               onSearch={navigate}
             />

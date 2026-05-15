@@ -102,7 +102,7 @@ flowchart LR
 - Amount input formats while typing and shows the source currency symbol.
 - Route mode switch:
   - **All**: fiat broker plus stablecoin venue routes.
-  - **Fiat Only**: only fiat broker routes.
+  - **Fiat Only**: only fiat broker routes between fiat currencies.
 - Search button and estimated receive preview.
 - Top 3 routes ranked by final recipient amount, highest first.
 - Route cards show:
@@ -388,7 +388,7 @@ flowchart TD
   E --> F
   F --> G{"Route mode"}
   G -->|All| H["Use fiat + stablecoin edges"]
-  G -->|Fiat Only| I["Keep fiat broker edges only"]
+  G -->|Fiat Only| I["Keep fiat broker edges between fiat currencies only"]
   H --> J["DFS paths from source to target"]
   I --> J
   J --> K["Reject cycles and paths over 3 legs"]
@@ -459,6 +459,8 @@ GBP -> [DeltaMarkets] -> USDT -> [ZetaSwap] -> CHF -> [AlphaFX] -> JPY
 
 - Filters out stablecoin venue edges.
 - Allows only providers where `providerType === "fiat_broker"`.
+- Requires every leg currency to be fiat, so `USDT` and `USDC` are excluded even when a live fiat API happens to quote them.
+- The UI limits the currency picker to fiat currencies in this mode and moves an already-selected stablecoin to a valid fiat fallback.
 - Can still produce multi-leg fiat paths such as:
 
 ```text

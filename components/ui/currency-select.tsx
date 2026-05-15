@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 interface CurrencySelectProps {
   value: string;
   onValueChange: (value: string) => void;
+  currencies?: readonly string[];
   align?: "start" | "end";
   className?: string;
   buttonClassName?: string;
@@ -29,6 +30,7 @@ const MENU_MIN_WIDTH = 220;
 export function CurrencySelect({
   value,
   onValueChange,
+  currencies = COMMON_CURRENCIES,
   align = "start",
   className,
   buttonClassName,
@@ -44,13 +46,13 @@ export function CurrencySelect({
     const normalizedQuery = query.trim().toLowerCase();
 
     if (!normalizedQuery) {
-      return COMMON_CURRENCIES;
+      return currencies;
     }
 
-    return COMMON_CURRENCIES.filter((currency) =>
+    return currencies.filter((currency) =>
       currency.toLowerCase().includes(normalizedQuery),
     );
-  }, [query]);
+  }, [currencies, query]);
 
   const updateMenuPosition = useCallback(() => {
     const trigger = triggerRef.current;

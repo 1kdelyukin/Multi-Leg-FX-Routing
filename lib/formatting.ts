@@ -12,6 +12,9 @@ export const COMMON_CURRENCIES = [
   "USDC",
 ];
 
+export const FIAT_CURRENCIES = ["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF"];
+export const CRYPTO_CURRENCIES = ["USDT", "USDC"];
+
 const CURRENCY_FLAGS: Record<string, string> = {
   USD:  "/currencies/USD.png",
   EUR:  "/currencies/EUR.png",
@@ -28,13 +31,17 @@ export function getCurrencyFlag(currency: string): string | null {
   return CURRENCY_FLAGS[currency.toUpperCase()] ?? null;
 }
 
-const FIAT_CURRENCIES = new Set(["USD", "EUR", "GBP", "JPY", "CAD", "AUD", "CHF"]);
-const CRYPTO_CURRENCIES = new Set(["USDT", "USDC"]);
+const FIAT_CURRENCY_SET = new Set(FIAT_CURRENCIES);
+const CRYPTO_CURRENCY_SET = new Set(CRYPTO_CURRENCIES);
+
+export function isFiatCurrency(currency: string): boolean {
+  return FIAT_CURRENCY_SET.has(currency.toUpperCase());
+}
 
 export function getCurrencySymbol(currency: string): string {
   const normalizedCurrency = currency.toUpperCase();
 
-  if (!FIAT_CURRENCIES.has(normalizedCurrency)) {
+  if (!FIAT_CURRENCY_SET.has(normalizedCurrency)) {
     return normalizedCurrency;
   }
 
@@ -86,7 +93,7 @@ export function formatAmountInput(value: string): string {
 export function formatAmount(amount: number, currency: string): string {
   const normalizedCurrency = currency.toUpperCase();
 
-  if (FIAT_CURRENCIES.has(normalizedCurrency)) {
+  if (FIAT_CURRENCY_SET.has(normalizedCurrency)) {
     try {
       return new Intl.NumberFormat("en-US", {
         style: "currency",
@@ -99,7 +106,7 @@ export function formatAmount(amount: number, currency: string): string {
     }
   }
 
-  const decimals = CRYPTO_CURRENCIES.has(normalizedCurrency) ? 4 : 2;
+  const decimals = CRYPTO_CURRENCY_SET.has(normalizedCurrency) ? 4 : 2;
   return `${formatNumber(amount, 2, decimals)} ${normalizedCurrency}`;
 }
 
