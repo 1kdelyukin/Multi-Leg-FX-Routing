@@ -47,13 +47,12 @@ export const dynamic = "force-dynamic";
 export async function GET() {
   const bases = [...new Set(TICKER_PAIRS.map((pair) => pair.from))];
   const latestVersion = "latest";
-  const previousVersion = toIsoDate(addDays(new Date(), -1));
   const warnings: ProviderWarning[] = [];
 
-  const [latestMaps, previousMaps] = await Promise.all([
-    fetchRateMaps(bases, latestVersion, warnings),
-    fetchRateMaps(bases, previousVersion, warnings),
-  ]);
+  const latestMaps = await fetchRateMaps(bases, latestVersion, warnings);
+  const latestDate = getMostCommonSourceDate(latestMaps) ?? toIsoDate(addDays(new Date(), -1));
+  const previousVersion = toIsoDate(addDays(new Date(`${latestDate}T00:00:00.000Z`), -1));
+  const previousMaps = await fetchRateMaps(bases, previousVersion, warnings);
 
   const pairs: TickerPair[] = TICKER_PAIRS.map(({ from, to }) => {
     const rate = readRate(latestMaps.get(from), from, to);
@@ -70,18 +69,31 @@ export async function GET() {
       rate,
       previousRate,
       change,
-      up: change === null ? null : change >= 0,
+      up: change === null || change === 0 ? null : change > 0,
     };
   });
 
   return NextResponse.json({
     source: "DeltaMarkets (fawazahmed0 daily currency API)",
     latestVersion,
+    latestDate,
     previousVersion,
     generatedAt: new Date().toISOString(),
     pairs,
     warnings,
   });
+}
+
+function getMostCommonSourceDate(maps: Map<string, FawazCurrencyResponse>): string | null {
+  const counts = new Map<string, number>();
+
+  maps.forEach((data) => {
+    if (typeof data.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
+      counts.set(data.date, (counts.get(data.date) ?? 0) + 1);
+    }
+  });
+
+  return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 }
 
 async function fetchRateMaps(

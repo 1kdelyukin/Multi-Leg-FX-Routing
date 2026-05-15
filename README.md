@@ -488,6 +488,8 @@ Implementation notes:
 - The ticker is live market context, but it is still not used in route ranking.
 - The route engine fetches its own provider data through `/api/routes`.
 - The ticker endpoint returns `rate`, `previousRate`, `change`, and `up` for each pair.
+- The comparison uses the date reported by the `@latest` API response, then compares against the prior calendar day. This avoids comparing `@latest` to the same dated file when the provider has not published the current calendar day yet.
+- Zero change is treated as neutral instead of green.
 - If a ticker request fails, the component shows a loading/fallback state instead of breaking the page.
 - Pairs are duplicated so the animation can loop continuously.
 - CSS masks and faded borders make the band blend into the page.
